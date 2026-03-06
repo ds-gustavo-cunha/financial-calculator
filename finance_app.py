@@ -13,6 +13,7 @@ plt.style.use("fivethirtyeight")
 
 # --- Logic Function ---
 def calculate_projection(
+    initial_savings: int,
     monthly_savings: int,
     yearly_return: Union[int, float],
     yearly_inflation: Union[int, float],
@@ -38,7 +39,7 @@ def calculate_projection(
     
     # Calculate Nominal Value
     # Handle month 0 to avoid division by zero
-    nominal_vals: List[float] = [0.0]
+    nominal_vals: List[float] = [initial_savings]
     # Iterate over all possible months
     for _ in range(len(df_finance) - 1):
         # new momth value = last month value * monthly return + monthly savings
@@ -66,9 +67,20 @@ st.markdown("Visualize how compound interest grows your wealth and how inflation
 
 # --- Sidebar Inputs ---
 st.sidebar.header("User Inputs")
+initial_savings = st.sidebar.number_input(
+    label="Initial Savings ($)",
+    min_value=0, value=100_000, step=100,
+    format="%d"
+)
+st.sidebar.caption(
+    body=f"Initial Savings: **${initial_savings:,}**"
+)
 monthly_savings = st.sidebar.number_input(
     label="Monthly Savings ($)",
     min_value=0, value=20_000, step=100
+)
+st.sidebar.caption(
+    body=f"Monthly Savings: **${monthly_savings:,}**"
 )
 yearly_return = st.sidebar.slider(
     label="Yearly Return Rate (%)",
@@ -87,6 +99,7 @@ max_years = int(
 
 # --- Calculations ---
 df_finance = calculate_projection(
+    initial_savings=initial_savings,
     monthly_savings=monthly_savings,
     yearly_return=yearly_return,
     yearly_inflation=yearly_inflation,
