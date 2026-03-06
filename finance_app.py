@@ -27,8 +27,14 @@ def calculate_projection(
     # Get years column
     df_finance["years"] = df_finance["months"] / 12
 
+    # Save input variables on dataframe
+    df_finance["initial_savings"] = initial_savings
+    df_finance["monthly_savings"] = monthly_savings
+    df_finance["yearly_return"] = yearly_return
+    df_finance["yearly_inflation"] = yearly_inflation
+
     # Create a column with invested money
-    df_finance["total_invested"] = df_finance["months"] * monthly_savings
+    df_finance["total_invested"] = initial_savings + (df_finance["months"] * monthly_savings)    
 
     # Get month return as percentage
     monthly_return_percent = (1 + yearly_return / 100) ** (1 / 12) - 1
@@ -77,24 +83,34 @@ st.sidebar.caption(
 )
 monthly_savings = st.sidebar.number_input(
     label="Monthly Savings ($)",
-    min_value=0, value=20_000, step=100
+    min_value=0, value=20_000, step=100,
+    format="%d"    
 )
 st.sidebar.caption(
     body=f"Monthly Savings: **${monthly_savings:,}**"
 )
-yearly_return = st.sidebar.slider(
+yearly_return = st.sidebar.number_input(
     label="Yearly Return Rate (%)",
-    min_value=0.0, max_value=100.0, value=10.0, step=0.1
+    min_value=0.0, max_value=100.0, value=10.0, step=0.1,
 )
-yearly_inflation = st.sidebar.slider(
+st.sidebar.caption(
+    body=f"Yearly return: **{yearly_return:.2f} %**"
+)
+yearly_inflation = st.sidebar.number_input(
     label="Yearly Inflation Rate (%)",
     min_value=0.0, max_value=100.0, value=10.0, step=0.01
+)
+st.sidebar.caption(
+    body=f"Yearly inflation: **{yearly_inflation:.2f} %**"
 )
 max_years = int(
     st.sidebar.number_input(
         label="Investment Horizon (Years)",
         min_value=1, max_value=50, value=10
     )
+)
+st.sidebar.caption(
+    body=f"Investing **{max_years} years**"
 )
 
 # --- Calculations ---
@@ -109,7 +125,7 @@ df_finance = calculate_projection(
 
 # --- Summary Metrics ---
 # Get metrics
-invested_final = monthly_savings * max_years * 12
+invested_final = initial_savings + (monthly_savings * max_years * 12)
 gross_final = df_finance["gross_value"].iloc[-1]
 net_final = df_finance["net_value"].iloc[-1]
 # Display
@@ -163,10 +179,14 @@ st.pyplot(fig)
 if st.checkbox("Show Raw Data Table"):
     st.dataframe(
         df_finance.style.format({
+            "initial_savings":"${:,.2f}",
+            "monthly_savings":"${:,.2f}",
+            "yearly_return": "{:.2f}%",
+            "yearly_inflation": "{:.2f}%",
             "total_invested": "${:,.2f}",
             "gross_value": "${:,.2f}",
             "net_value": "${:,.2f}",
-            "gross_return": "{:,.2f}",
-            "net_return": "{:,.2f}",
+            "gross_return": "${:,.2f}",
+            "net_return": "${:,.2f}",
         })
     )
