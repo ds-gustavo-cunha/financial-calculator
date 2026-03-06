@@ -6,6 +6,7 @@ from typing import Union
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import seaborn as sns
 import streamlit as st
 plt.style.use("fivethirtyeight")
@@ -55,12 +56,7 @@ def calculate_projection(
     df_finance["gross_return"] = df_finance["gross_value"] - df_finance["total_invested"]
     df_finance["net_return"] = df_finance["net_value"] - df_finance["total_invested"]
 
-    return dict(
-        df_finance_months=df_finance,
-        df_finance_years=df_finance[
-            df_finance["months"] % 12 == 0
-        ]
-    )
+    return df_finance
 
 
 # --- Streamlit UI ---
@@ -90,19 +86,19 @@ max_years = int(
 )
 
 # --- Calculations ---
-df_finance_months = calculate_projection(
+df_finance = calculate_projection(
     monthly_savings=monthly_savings,
     yearly_return=yearly_return,
     yearly_inflation=yearly_inflation,
     max_years=max_years
-)["df_finance_months"]
+)
 
 
 # --- Summary Metrics ---
 # Get metrics
 invested_final = monthly_savings * max_years * 12
-gross_final = df_finance_months["gross_value"].iloc[-1]
-net_final = df_finance_months["net_value"].iloc[-1]
+gross_final = df_finance["gross_value"].iloc[-1]
+net_final = df_finance["net_value"].iloc[-1]
 # Display
 col1, col2, col3 = st.columns(3)
 col1.metric(
@@ -125,32 +121,35 @@ col3.metric(
 st.subheader("Wealth Projection Over Time")
 fig, ax = plt.subplots(figsize=(10, 5))
 sns.lineplot(
-    data=df_finance_months,
+    data=df_finance,
     x="years",
     y="gross_value",
     label="Nominal Value (Bank Balance)",
     ax=ax
 )
 sns.lineplot(
-    data=df_finance_months,
+    data=df_finance,
     x="years",
     y="net_value",
     label="Real Value (Purchasing Power)",
     ax=ax    
 )
-# ax.set_title("Projection over time")
+# Define plot details
 ax.set_xticks(range(0, max_years + 1, max(1, max_years // 10)))
 ax.set_xlabel("Years")
 ax.set_ylabel("Amount ($)")
 ax.legend()
-# # Format y-axis as currency
+# Set the y grid step to 500,000
+ax.yaxis.set_major_locator(ticker.MultipleLocator(500_000))
+# Format as currency (keep your existing formatter)
 ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'$ {x:,.0f}'))
+# Display plot
 st.pyplot(fig)
 
 # --- Data Table ---
 if st.checkbox("Show Raw Data Table"):
     st.dataframe(
-        df_finance_months.style.format({
+        df_finance.style.format({
             "total_invested": "${:,.2f}",
             "gross_value": "${:,.2f}",
             "net_value": "${:,.2f}",
